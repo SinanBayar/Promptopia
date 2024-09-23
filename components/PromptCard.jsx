@@ -23,8 +23,8 @@ const PromptCard = ({ post, handleTagClick, handleEdit, handleDelete }) => {
           <Image
             src={post.creator.image}
             alt="user_image"
-            width={40}
-            height={40}
+            width={50}
+            height={50}
             className="rounded-full object-contain"
           />
           <div className="flex flex-col">
@@ -45,6 +45,7 @@ const PromptCard = ({ post, handleTagClick, handleEdit, handleDelete }) => {
             }
             width={12}
             height={12}
+            alt="copy_btn"
           />
         </div>
       </div>
