@@ -18,55 +18,57 @@ const PromptCardList = ({ data, handleTagClick }) => {
 };
 
 const Feed = () => {
+  const [allPosts, setAllPosts] = useState([]);
+
+  // Search states
   const [searchText, setSearchText] = useState("");
-  const [posts, setPosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [searchTimeout, setSearchTimeout] = useState(null);
+  const [searchedResults, setSearchedResults] = useState([]);
 
-  const filterPrompt = (searchValue) => {
-    const filtered = posts.filter((post) => {
-      const searchableValues = [
-        post.prompt,
-        post.tag,
-        post.creator.email,
-        post.creator.username,
-      ];
-      return searchableValues.some((value) => {
-        return value.toLowerCase().includes(searchValue);
-      });
-      // return (
-      //   post.prompt.toLowerCase().includes(searchValue) ||
-      //   post.tag.toLowerCase().includes(searchValue) ||
-      //   post.creator.email.toLowerCase().includes(searchValue) ||
-      //   post.creator.username.toLowerCase().includes(searchValue)
-      // );
-    });
-    setFilteredPosts(filtered);
-  };
-
-  const handleSearchChange = (e) => {
-    const searchValue = e.target.value.toLowerCase();
-    setSearchText(searchValue);
-    filterPrompt(searchValue);
-  };
-
-  const handleTagClick = (e) => {
-    setSearchText(e);
-    filterPrompt(e);
+  const fetchPosts = async () => {
+    try {
+      const response = await fetch("/api/prompt");
+      const data = await response.json();
+      setAllPosts(data);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await fetch("/api/prompt");
-        const data = await response.json();
-        setPosts(data);
-        setFilteredPosts(data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
     fetchPosts();
   }, []);
+
+  const filterPrompts = (searchValue) => {
+    const regex = new RegExp(searchValue, "i");
+    return allPosts.filter(
+      (item) =>
+        regex.test(item.creator.username) ||
+        regex.test(item.creator.email) ||
+        regex.test(item.tag) ||
+        regex.test(item.prompt)
+    );
+  };
+
+  const handleSearchChange = (e) => {
+    clearTimeout(searchTimeout);
+    setSearchText(e.target.value);
+
+    // debounce method
+    setSearchTimeout(
+      setTimeout(() => {
+        const searchResult = filterPrompts(e.target.value);
+        setSearchedResults(searchResult);
+      }, 500)
+    );
+  };
+
+  const handleTagClick = (tagName) => {
+    setSearchText(tagName);
+
+    const searchResult = filterPrompts(tagName);
+    setSearchedResults(searchResult);
+  };
 
   return (
     <section className="feed">
@@ -81,7 +83,14 @@ const Feed = () => {
         />
       </form>
 
-      <PromptCardList data={filteredPosts} handleTagClick={handleTagClick} />
+      {searchText ? (
+        <PromptCardList
+          data={searchedResults}
+          handleTagClick={handleTagClick}
+        />
+      ) : (
+        <PromptCardList data={allPosts} handleTagClick={handleTagClick} />
+      )}
     </section>
   );
 };
